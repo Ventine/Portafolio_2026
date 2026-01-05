@@ -1,56 +1,72 @@
-document.querySelectorAll(".tech-bg").forEach(canvas => {
-  const ctx = canvas.getContext("2d");
-  const color = canvas.dataset.color;
-
-  function resize() {
-    canvas.width = canvas.parentElement.offsetWidth;
-    canvas.height = canvas.parentElement.offsetHeight;
+class ParticleBackground {
+  constructor(section) {
+    this.canvas = section.querySelector(".section-bg");
+    this.ctx = this.canvas.getContext("2d");
+    this.color = section.dataset.bg;
+    this.points = [];
+    this.resize();
+    this.init();
+    this.animate();
+    window.addEventListener("resize", () => this.resize());
   }
 
-  resize();
-  window.addEventListener("resize", resize);
+  resize() {
+    this.canvas.width = this.canvas.parentElement.offsetWidth;
+    this.canvas.height = this.canvas.parentElement.offsetHeight;
+  }
 
-  const points = Array.from({ length: 90 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    vx: (Math.random() - 0.5) * 0.4,
-    vy: (Math.random() - 0.5) * 0.4
-  }));
+  init(count = 80) {
+    this.points = Array.from({ length: count }, () => ({
+      x: Math.random() * this.canvas.width,
+      y: Math.random() * this.canvas.height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4
+    }));
+  }
 
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawPoint(p) {
+    this.ctx.beginPath();
+    this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    this.ctx.fillStyle = this.color;
+    this.ctx.fill();
+  }
 
-    points.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-
-      if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-      if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-    });
-
-    for (let i = 0; i < points.length; i++) {
-      for (let j = i + 1; j < points.length; j++) {
-        const dx = points[i].x - points[j].x;
-        const dy = points[i].y - points[j].y;
-        const d = Math.sqrt(dx*dx + dy*dy);
+  drawLines() {
+    for (let i = 0; i < this.points.length; i++) {
+      for (let j = i + 1; j < this.points.length; j++) {
+        const dx = this.points[i].x - this.points[j].x;
+        const dy = this.points[i].y - this.points[j].y;
+        const d = Math.hypot(dx, dy);
 
         if (d < 140) {
-          ctx.strokeStyle = "rgba(255,255,255,0.07)";
-          ctx.beginPath();
-          ctx.moveTo(points[i].x, points[i].y);
-          ctx.lineTo(points[j].x, points[j].y);
-          ctx.stroke();
+          this.ctx.strokeStyle = "rgba(255,255,255,0.07)";
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.points[i].x, this.points[i].y);
+          this.ctx.lineTo(this.points[j].x, this.points[j].y);
+          this.ctx.stroke();
         }
       }
     }
-
-    requestAnimationFrame(animate);
   }
 
-  animate();
+  animate() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.points.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x <= 0 || p.x >= this.canvas.width) p.vx *= -1;
+      if (p.y <= 0 || p.y >= this.canvas.height) p.vy *= -1;
+
+      this.drawPoint(p);
+    });
+
+    this.drawLines();
+    requestAnimationFrame(() => this.animate());
+  }
+}
+
+document.querySelectorAll(".section").forEach(section => {
+  new ParticleBackground(section);
 });
